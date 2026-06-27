@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英語フレーズノート - English Phrase Note</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:ital,wght=0,400;0,600;1,400&display=swap');
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #f7f6f3;
+      background-image: radial-gradient(#e5e5e5 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    .english-font {
+      font-family: 'Playfair Display', serif;
+    }
+
+    .code-font {
+      font-family: 'Courier Prime', monospace;
+    }
+
+    /* ノート風のデザインライン */
+    .notebook-paper {
+      background: #ffffff;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      position: relative;
+    }
+
+    .notebook-paper::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 40px;
+      width: 2px;
+      background-color: #fca5a5; /* 赤いマージン線 */
+      opacity: 0.5;
+      pointer-events: none; /* クリックやフォーカスの邪魔をしないように絶対指定 */
+    }
+
+    /* カスタムスクロールバー */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col pb-12">
+
+  <!-- ヘッダー -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+      <button onclick="switchToView('list'); return false;" class="flex items-center space-x-2 text-left focus:outline-none">
+        <div class="bg-indigo-50 px-2 py-1 rounded border border-indigo-200 shadow-sm">
+          <i data-lucide="book-open" class="w-6 h-6 text-indigo-600"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-wider text-slate-900 english-font italic">PhraseBook</h1>
+          <p class="text-[10px] text-slate-500 font-medium">マイ英語フレーズノート</p>
+        </div>
+      </button>
+      
+      <button 
+        onclick="openAddForm()" 
+        class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition-all duration-200 flex items-center space-x-1 shadow-md hover:shadow-lg active:scale-95"
+      >
+        <i data-lucide="plus" class="w-4 h-4"></i>
+        <span>フレーズを追加</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="max-w-4xl w-full mx-auto px-4 mt-6 flex-grow">
+    
+    <!-- 通知メッセージ用コンテナ -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2 opacity-0 pointer-events-none transition-all duration-300 transform translate-y-2">
+      <i data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
+      <span id="toast-text" class="text-sm font-medium"></span>
+    </div>
+
+    <!-- 一覧画面（デフォルト） -->
+    <div id="view-list" class="space-y-6">
+      
+      <!-- 検索・フィルターエリア -->
+      <div class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <!-- 検索バー -->
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
+          </div>
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="日本語または英語でフレーズを検索..." 
+            class="block w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50/50 transition-all text-sm md:text-base outline-none"
+            oninput="handleSearch()"
+          >
+          <button 
+            id="clear-search" 
+            onclick="clearSearchInput()" 
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 hidden"
+          >
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- 絞り込み条件（タグ & お気に入り & カスタム管理） -->
+        <div class="flex flex-wrap items-center gap-3 pt-2 text-sm justify-between">
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- お気に入りフィルター -->
+            <button 
+              id="filter-favorite" 
+              onclick="toggleFavoriteFilter()" 
+              class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors bg-white"
+            >
+              <i data-lucide="star" class="w-4 h-4 fill-none animate-none" id="star-icon"></i>
+              <span>お気に入りのみ</span>
+            </button>
+
+            <span class="text-slate-300">|</span>
+
+            <!-- タグ選択 -->
+            <div class="flex flex-wrap items-center gap-1.5" id="tag-filters">
+              <!-- 動的にカスタムフィルターを生成 -->
+            </div>
+          </div>
+
+          <!-- フィルター編集・管理への導線 -->
+          <button 
+            onclick="openFilterManageModal()" 
+            class="text-xs text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 font-bold px-3 py-1.5 rounded-lg border border-indigo-100 flex items-center space-x-1 transition-colors"
+            title="独自のフィルターカテゴリを管理する"
+          >
+            <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+            <span>フィルター管理</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 件数表示 & リセットボタン -->
+      <div class="flex justify-between items-center px-1">
+        <div class="text-sm text-slate-500 font-medium">
+          検索結果: <span id="results-count" class="text-slate-800 font-bold text-lg">0</span> 件
+        </div>
+        <button 
+          id="reset-filters-btn" 
+          onclick="resetAllFilters()" 
+          class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center space-x-1 hidden"
+        >
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          <span>フィルターをリセット</span>
+        </button>
+      </div>
+
+      <!-- フレーズリスト（ノート一覧） -->
+      <div id="phrases-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- JSで動的に追加されます -->
+      </div>
+
+      <!-- 空の状態の表示 -->
+      <div id="empty-state" class="hidden text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 p-8">
+        <div class="inline-flex p-4 bg-slate-50 rounded-full text-slate-400 mb-4">
+          <i data-lucide="folder-open" class="w-12 h-12"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800 mb-1">フレーズが見つかりません</h3>
+        <p class="text-slate-500 text-sm max-w-sm mx-auto mb-6">検索ワードを変更するか、新しいフレーズを登録してみましょう！</p>
+        <button 
+          onclick="openAddForm()" 
+          class="inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors shadow"
+        >
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>最初のフレーズを追加</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- 詳細編集統合画面（ハッシュに依存しない単独表示DOM） -->
+    <div id="view-detail" class="hidden space-y-6">
+      <div class="flex items-center justify-between mb-4">
+        <button 
+          type="button"
+          onclick="cancelDetailEdit(); return false;" 
+          class="flex items-center space-x-1 text-slate-600 hover:text-slate-900 font-medium text-sm py-2 px-3 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-slate-200"
+        >
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span>編集を破棄して戻る</span>
+        </button>
+
+        <div class="flex items-center space-x-3">
+          <!-- 直接削除ボタン -->
+          <button 
+            type="button"
+            id="detail-delete-btn" 
+            class="flex items-center space-x-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-medium px-3.5 py-1.5 rounded-lg text-sm transition-colors shadow-sm"
+          >
+            <i data-lucide="trash-2" class="w-4 h-4 text-rose-500"></i>
+            <span>このフレーズを削除</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 詳細・直接編集ノート（ノート風デザイン） -->
+      <form id="detail-edit-form" onsubmit="saveDetailEdit(event)" class="notebook-paper p-6 md:p-10 pl-16 md:pl-20 min-h-[450px] flex flex-col justify-between space-y-8">
+        <!-- 編集対象のIDを保持する隠しフィールド -->
+        <input type="hidden" id="detail-form-id">
+        
+        <div class="space-y-6">
+          
+          <!-- お気に入り切り替えタグエリア -->
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex flex-col">
+              <span class="text-xs font-bold text-indigo-500 tracking-widest uppercase font-mono">STATUS / ID: <span id="detail-id" class="font-normal text-slate-400"></span></span>
+            </div>
+            
+            <button 
+              type="button"
+              id="detail-favorite-toggle"
+              class="flex items-center space-x-1 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all"
+            >
+              <!-- JSで動的に変更されます -->
+            </button>
+          </div>
+
+          <!-- 英語フレーズ (直感的に変更・修正可能、通常のコピペや文字入力が完全に効きます) -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-indigo-500 uppercase tracking-widest block font-mono" for="detail-phrase-input">PHRASE *</label>
+            <input 
+              type="text" 
+              id="detail-phrase-input" 
+              required
+              class="w-full text-2xl md:text-3xl font-bold english-font text-slate-900 bg-transparent border-b border-dashed border-slate-200 focus:border-indigo-500 focus:ring-0 outline-none pb-1 transition-colors"
+              placeholder="英語フレーズを入力"
+            >
+          </div>
+
+          <!-- 日本語訳 -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-indigo-500 uppercase tracking-widest block font-mono" for="detail-translation-input">MEANING *</label>
+            <input 
+              type="text" 
+              id="detail-translation-input" 
+              required
+              class="w-full text-base md:text-lg font-medium text-slate-800 bg-transparent border-b border-dashed border-slate-200 focus:border-indigo-500 focus:ring-0 outline-none pb-1 transition-colors"
+              placeholder="日本語訳を入力"
+            >
+          </div>
+
+          <!-- 例文 (英語 / 日本語) -->
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-indigo-500 uppercase tracking-widest block font-mono">EXAMPLE</label>
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-2">
+              <input 
+                type="text" 
+                id="detail-example-input" 
+                class="w-full bg-transparent border-b border-dashed border-slate-300 focus:border-indigo-500 focus:ring-0 outline-none pb-0.5 text-base italic font-medium text-slate-800 english-font"
+                placeholder="英語の例文を入力してください"
+              >
+              <input 
+                type="text" 
+                id="detail-example-translation-input" 
+                class="w-full bg-transparent border-b border-dashed border-slate-300 focus:border-indigo-500 focus:ring-0 outline-none pb-0.5 text-xs text-slate-500"
+                placeholder="例文の日本語訳を入力してください"
+              >
+            </div>
+          </div>
+
+          <!-- メモ -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-indigo-500 uppercase tracking-widest block font-mono" for="detail-memo-input">NOTE</label>
+            <textarea 
+              id="detail-memo-input" 
+              rows="4"
+              class="w-full text-sm text-slate-600 bg-transparent border-b border-dashed border-slate-200 focus:border-indigo-500 focus:ring-0 outline-none pb-1 transition-colors resize-y leading-relaxed"
+              placeholder="ニュアンスや類義語、使い方のルールなどを自由に書き留めてください"
+            ></textarea>
+          </div>
+
+          <!-- タグ・フィルター選択エリア -->
+          <div class="space-y-2">
+            <label class="text-xs font-bold text-indigo-500 uppercase tracking-widest block font-mono">TAGS / FILTERS</label>
+            
+            <!-- 詳細ノート内タグ管理 -->
+            <div class="flex flex-wrap gap-1.5 p-2.5 border border-slate-200 rounded-xl bg-slate-50/50 min-h-[42px] focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
+              <div id="detail-tags-list" class="flex flex-wrap gap-1.5 items-center">
+                <!-- JSで動的にタグチップが入ります -->
+              </div>
+              <input 
+                type="text" 
+                id="detail-tag-inline-input" 
+                placeholder="新規タグを入力してEnter..." 
+                class="flex-grow bg-transparent text-xs outline-none min-w-[150px] py-1 text-slate-700"
+                onkeydown="handleDetailTagInputKeydown(event)"
+              >
+            </div>
+            
+            <!-- 登録済みカスタムフィルターから素早くタグ付けするエリア -->
+            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+              <span class="text-[10px] text-slate-400 font-bold block mb-1">フィルター一覧（クリックで追加/解除）:</span>
+              <div class="flex flex-wrap gap-1" id="detail-suggested-tags">
+                <!-- JSで動的にボタン生成 -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- アクションフッターボタン -->
+        <div class="pt-6 border-t border-slate-100 flex items-center justify-end space-x-3 mt-8">
+          <button 
+            type="button" 
+            onclick="cancelDetailEdit()" 
+            class="px-5 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors border border-slate-200"
+          >
+            変更を破棄
+          </button>
+          
+          <button 
+            type="submit" 
+            class="px-6 py-2.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-md hover:shadow-lg active:scale-95 flex items-center space-x-1.5"
+          >
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span>変更を保存</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </main>
+
+  <!-- 編集・追加モーダル（新規追加専用） -->
+  <div id="phrase-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh] transform scale-95 transition-all duration-300" id="modal-container">
+      
+      <!-- モーダルヘッダー -->
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <h3 id="modal-title" class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+          <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-600"></i>
+          <span>新しいフレーズを追加</span>
+        </h3>
+        <button onclick="closeModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- モーダルフォーム内容 -->
+      <form id="phrase-form" onsubmit="savePhrase(event)" class="flex-grow overflow-y-auto p-6 space-y-4">
+        <input type="hidden" id="form-id">
+
+        <!-- 英語フレーズ -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1" for="form-phrase">英語フレーズ *</label>
+          <input 
+            type="text" 
+            id="form-phrase" 
+            required 
+            placeholder="例: Piece of cake" 
+            class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm outline-none font-medium"
+          >
+        </div>
+
+        <!-- 日本語訳 -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1" for="form-translation">日本語訳 *</label>
+          <input 
+            type="text" 
+            id="form-translation" 
+            required 
+            placeholder="例: 朝飯前、とても簡単" 
+            class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm outline-none"
+          >
+        </div>
+
+        <!-- 例文（英語 & 日本語訳） -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">例文</label>
+          <input 
+            type="text" 
+            id="form-example" 
+            placeholder="英語の例文: It's a piece of cake." 
+            class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm outline-none"
+          >
+          <input 
+            type="text" 
+            id="form-example-translation" 
+            placeholder="例文の日本語訳: そんなの朝飯前だよ。" 
+            class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm outline-none"
+          >
+        </div>
+
+        <!-- メモ -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1" for="form-memo">メモ</label>
+          <textarea 
+            id="form-memo" 
+            rows="3" 
+            placeholder="ニュアンスや使い方、類義語など" 
+            class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm outline-none resize-none"
+          ></textarea>
+        </div>
+
+        <!-- タグ管理UI -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">タグ（フィルター）設定</label>
+          
+          <!-- チップを並べるコンテナ -->
+          <div class="flex flex-wrap gap-1.5 p-2 border border-slate-200 rounded-lg bg-slate-50/50 min-h-[42px] mb-2 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
+            <div id="modal-tags-list" class="flex flex-wrap gap-1.5 items-center">
+              <!-- JSで動的に追加されたタグチップがここに入ります -->
+            </div>
+            <!-- 入力用インラインテキストボックス -->
+            <input 
+              type="text" 
+              id="tag-inline-input" 
+              placeholder="新規タグを入力してEnter..." 
+              class="flex-grow bg-transparent text-xs outline-none min-w-[120px] py-1"
+              onkeydown="handleTagInputKeydown(event)"
+            >
+          </div>
+          <p class="text-[10px] text-slate-400 mb-2">※ 文字を入力して <span class="bg-slate-200 px-1 py-0.5 rounded font-bold">Enter</span> キーまたはスペース、読点で新しいカスタムフィルタータグを追加できます。</p>
+          
+          <!-- 推奨タグ簡易追加ボタン（登録済みフィルターから自動的に生成） -->
+          <div>
+            <span class="text-[11px] text-slate-400">登録済みのフィルター一覧（クリックで追加）:</span>
+            <div class="flex flex-wrap gap-1 mt-1" id="form-suggested-tags">
+              <!-- JSで動的にcustomFiltersからボタンを生成 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- お気に入りトグル -->
+        <div class="flex items-center space-x-2 pt-2">
+          <input 
+            type="checkbox" 
+            id="form-favorite" 
+            class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+          >
+          <label for="form-favorite" class="text-sm text-slate-700 font-medium cursor-pointer font-mono">お気に入りに登録する</label>
+        </div>
+
+        <!-- モーダルフッターボタン -->
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
+          <button 
+            type="button" 
+            onclick="closeModal()" 
+            class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
+          >
+            キャンセル
+          </button>
+          <button 
+            type="submit" 
+            class="px-5 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-sm"
+          >
+            保存する
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- カスタムフィルター管理モーダル -->
+  <div id="filter-manage-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full overflow-hidden flex flex-col max-h-[85vh] transform scale-95 transition-all duration-300" id="filter-modal-container">
+      
+      <!-- ヘッダー -->
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+          <i data-lucide="tag" class="w-5 h-5 text-indigo-600"></i>
+          <span>フィルター（カテゴリ）の管理</span>
+        </h3>
+        <button onclick="closeFilterManageModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- コンテンツ -->
+      <div class="p-6 overflow-y-auto space-y-4 flex-grow">
+        <p class="text-xs text-slate-500 leading-relaxed">
+          独自のカスタムフィルタータグを自由に作成、名前変更、削除できます。フィルターを削除しても、登録済みのフレーズ自体は削除されません。
+        </p>
+
+        <!-- 新規フィルターの追加フォーム -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-2">
+          <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">新規フィルター作成</label>
+          <div class="flex space-x-2">
+            <input 
+              type="text" 
+              id="new-filter-input" 
+              placeholder="例: ネイティブ表現、復習中、重要" 
+              class="flex-grow px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+            >
+            <button 
+              onclick="addNewCustomFilter()" 
+              class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition-all duration-200 flex items-center space-x-1 shadow-sm active:scale-95"
+            >
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>追加</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 登録済みフィルターリスト -->
+        <div class="space-y-2">
+          <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">登録中のフィルター一覧</label>
+          <div id="custom-filters-list-container" class="space-y-2 max-h-[35vh] overflow-y-auto pr-1">
+            <!-- JSで動的にフィルター一覧を挿入 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- フッター -->
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end bg-slate-50">
+        <button 
+          onclick="closeFilterManageModal()" 
+          class="px-5 py-2 text-sm font-medium bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl transition-colors"
+        >
+          閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- カスタムダイアログ（削除確認用） -->
+  <div id="confirm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-sm w-full p-6 text-center transform scale-95 transition-all">
+      <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 mb-2">フレーズを削除しますか？</h3>
+      <p class="text-slate-500 text-sm mb-6">この操作は取り消せません。本当に削除してもよろしいですか?</p>
+      <div class="flex items-center justify-center space-x-2">
+        <button 
+          onclick="closeConfirmModal()" 
+          class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
+        >
+          キャンセル
+        </button>
+        <button 
+          id="confirm-delete-btn"
+          class="px-5 py-2 text-sm font-medium bg-rose-600 hover:bg-rose-700 text-white rounded-xl transition-colors"
+        >
+          削除する
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- 初期サンプルデータ ---
+    const defaultPhrases = [
+      {
+        id: "1",
+        phrase: "By all means",
+        translation: "ぜひとも、もちろん",
+        example: "Could I borrow your pen? - By all means.",
+        exampleTranslation: "ペンを借りてもいいですか？ - ええ、もちろんどうぞ。",
+        memo: "相手の依頼に対して、快く非常に肯定的に承諾する際に使う表現。SureやOf courseよりも丁寧で前向きな響きがある。",
+        tags: ["日常", "仕事", "よく使う"],
+        favorite: true,
+        createdAt: 1719478400000
+      },
+      {
+        id: "2",
+        phrase: "Could you run that by me again?",
+        translation: "もう一度説明していただけますか？",
+        example: "I'm sorry, could you run that by me again?",
+        exampleTranslation: "すみません、もう一度それを説明してもらえますか？",
+        memo: "「run something by someone」で「～に説明する、意見を仰ぐ」という意味。相手の言ったことがよく理解できなかったり、再確認したいときに重宝するフレーズ。",
+        tags: ["仕事", "日常", "復習中"],
+        favorite: false,
+        createdAt: 1719478500000
+      },
+      {
+        id: "3",
+        phrase: "Hit the road",
+        translation: "出発する、旅に出る、帰路につく",
+        example: "It's getting late. We should hit the road.",
+        exampleTranslation: "遅くなってきたね。そろそろ出発しなきゃ。",
+        memo: "直訳すると「道路を叩く」だが、カジュアルに出発することを示す。ドライブに行く際や、人の家からおいとまする際によく使われる。",
+        tags: ["旅行", "日常"],
+        favorite: true,
+        createdAt: 1719478600000
+      },
+      {
+        id: "4",
+        phrase: "It depends",
+        translation: "状況によります、一概には言えません",
+        example: "Are you coming to the party? - It depends on the weather.",
+        exampleTranslation: "パーティーに来る？ - 天気次第かな。",
+        memo: "会話で「ケースバイケースですね」と答えたいときに最も自然なフレーズ。It depends. 単体でも使える。",
+        tags: ["日常", "ネイティブ表現"],
+        favorite: false,
+        createdAt: 1719478700000
+      },
+      {
+        id: "5",
+        phrase: "I'll see what I can do",
+        translation: "できる限りのことはやってみます",
+        example: "Is there any discount available? - I'll see what I can do.",
+        exampleTranslation: "割引はありますか？ - できるかどうか、ちょっと確認してみますね。",
+        memo: "接客やビジネスシーンで、確約はできないけれど、善処したいと伝えるときに使える便利な表現。",
+        tags: ["接客", "仕事"],
+        favorite: false,
+        createdAt: 1719478800000
+      }
+    ];
+
+    // デフォルトのフィルター（タグマスタ）
+    const defaultFilters = ["日常", "仕事", "旅行", "接客", "ネイティブ表現", "よく使う", "復習中"];
+
+    // アプリケーション状態管理
+    let state = {
+      phrases: [],
+      customFilters: [], // カスタムフィルター（マスタデータ）
+      filters: {
+        searchQuery: "",
+        favoriteOnly: false,
+        selectedTag: null
+      },
+      activePhraseIdToDelete: null,
+      tempTags: [], // モーダル編集中のタグ一時保持用
+      detailTempTags: [] // 詳細画面で直接編集する用のタグ一時保持用
+    };
+
+    // --- STREAMING_CHUNK:Implementing hybrid routing and view state manager... ---
+    // データの読み込み
+    window.onload = function() {
+      initData();
+      setupRouting();
+      renderApp();
+      lucide.createIcons();
+    };
+
+    function initData() {
+      // 1. フレーズデータのロード
+      const localData = localStorage.getItem('phrasebook_phrases');
+      if (localData) {
+        state.phrases = JSON.parse(localData);
+      } else {
+        state.phrases = defaultPhrases;
+        savePhrasesToLocalStorage();
+      }
+
+      // 2. カスタムフィルター（カテゴリ）のロード
+      const localFilters = localStorage.getItem('phrasebook_custom_filters');
+      if (localFilters) {
+        state.customFilters = JSON.parse(localFilters);
+      } else {
+        state.customFilters = defaultFilters;
+        saveFiltersToLocalStorage();
+      }
+    }
+
+    // 各種ローカルストレージへの保存
+    function savePhrasesToLocalStorage() {
+      localStorage.setItem('phrasebook_phrases', JSON.stringify(state.phrases));
+    }
+
+    function saveFiltersToLocalStorage() {
+      localStorage.setItem('phrasebook_custom_filters', JSON.stringify(state.customFilters));
+    }
+
+    // --- ルーティング処理 (ハッシュルーティング) ---
+    function setupRouting() {
+      window.addEventListener('hashchange', handleRouteChange);
+      handleRouteChange(); // 初回ロード時
+    }
+
+    function handleRouteChange() {
+      const hash = window.location.hash;
+      
+      if (hash.startsWith('#phrase-')) {
+        const id = hash.replace('#phrase-', '');
+        const phrase = state.phrases.find(p => p.id === id);
+        if (phrase) {
+          showDetailEditView(phrase);
+        } else {
+          switchToView('list');
+        }
+      } else {
+        switchToView('list');
+      }
+    }
+
+    function navigate(hash) {
+      window.location.hash = hash;
+    }
+
+    // 表示切り替え(ハッシュブロック時にも100%確実にDOMが切り替わる安全設計)
+    function switchToView(viewName) {
+      if (viewName === 'list') {
+        if (window.location.hash !== '') {
+          history.replaceState(null, null, ' ');
+        }
+        document.getElementById('view-list').classList.remove('hidden');
+        document.getElementById('view-detail').classList.add('hidden');
+        renderFiltersAndList();
+      } else if (viewName === 'detail') {
+        document.getElementById('view-list').classList.add('hidden');
+        document.getElementById('view-detail').classList.remove('hidden');
+      }
+    }
+
+    // 直接編集画面を開く (ハッシュと状態管理の複合トリガー)
+    function openDetailEdit(id) {
+      const phrase = state.phrases.find(p => p.id === id);
+      if (phrase) {
+        window.location.hash = `#phrase-${id}`;
+        showDetailEditView(phrase);
+      }
+    }
+
+    // ==========================================
+    // --- 新しい詳細・直接編集統合画面の描画 ---
+    // ==========================================
+    function showDetailEditView(phrase) {
+      switchToView('detail');
+
+      // 詳細・編集データのはめ込み
+      document.getElementById('detail-form-id').value = phrase.id;
+      document.getElementById('detail-id').textContent = phrase.id;
+      
+      // 各項目をインプット欄へ挿入（通常のテキスト編集操作が完全にできます）
+      document.getElementById('detail-phrase-input').value = phrase.phrase;
+      document.getElementById('detail-translation-input').value = phrase.translation;
+      document.getElementById('detail-example-input').value = phrase.example || "";
+      document.getElementById('detail-example-translation-input').value = phrase.exampleTranslation || "";
+      document.getElementById('detail-memo-input').value = phrase.memo || "";
+
+      // お気に入りトグルのUI同期
+      updateDetailFavoriteUI(phrase.favorite);
+
+      // お気に入りトグルボタンのイベントハンドリング
+      const favToggleBtn = document.getElementById('detail-favorite-toggle');
+      favToggleBtn.onclick = () => {
+        phrase.favorite = !phrase.favorite;
+        savePhrasesToLocalStorage();
+        updateDetailFavoriteUI(phrase.favorite);
+        showToast(phrase.favorite ? "お気に入りに追加しました" : "お気に入りから削除しました");
+      };
+
+      // タグの一時配列を設定
+      state.detailTempTags = phrase.tags ? [...phrase.tags] : [];
+      renderDetailTags();
+      renderDetailSuggestedTags();
+
+      // 直接削除ボタンの設定
+      document.getElementById('detail-delete-btn').onclick = () => confirmDeletePhrase(phrase.id);
+
+      lucide.createIcons();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 詳細画面内のお気に入り表示の更新
+    function updateDetailFavoriteUI(isFavorite) {
+      const toggleBtn = document.getElementById('detail-favorite-toggle');
+      if (isFavorite) {
+        toggleBtn.className = "flex items-center space-x-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-all";
+        toggleBtn.innerHTML = `
+          <i data-lucide="star" class="w-3.5 h-3.5 fill-amber-400 text-amber-500"></i>
+          <span>お気に入り登録中</span>
+        `;
+      } else {
+        toggleBtn.className = "flex items-center space-x-1 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-all";
+        toggleBtn.innerHTML = `
+          <i data-lucide="star" class="w-3.5 h-3.5 text-slate-400"></i>
+          <span>お気に入りに登録</span>
+        `;
+      }
+      lucide.createIcons();
+    }
+
+    // --- STREAMING_CHUNK:Rendering list views and card items... ---
+    // 詳細画面内のタグバッジを描画
+    function renderDetailTags() {
+      const listEl = document.getElementById('detail-tags-list');
+      listEl.innerHTML = '';
+
+      state.detailTempTags.forEach((tag, idx) => {
+        const chip = document.createElement('span');
+        chip.className = 'inline-flex items-center space-x-1 bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-indigo-100 shadow-sm';
+        chip.innerHTML = `
+          <span>${tag}</span>
+          <button type="button" class="tag-remove-btn hover:bg-indigo-100 p-0.5 rounded text-indigo-500 hover:text-indigo-800 transition-colors">
+            <i data-lucide="x" class="w-3 h-3"></i>
+          </button>
+        `;
+        // タグ個別の削除イベント設定
+        chip.querySelector('.tag-remove-btn').onclick = (e) => {
+          e.stopPropagation();
+          removeDetailTagChip(idx);
+        };
+        listEl.appendChild(chip);
+      });
+
+      document.getElementById('detail-tag-inline-input').value = "";
+      lucide.createIcons();
+    }
+
+    // 詳細画面でのタグ入力時のイベント（Enter, Space, 読点・カンマでタグ化）
+    function handleDetailTagInputKeydown(event) {
+      const input = event.target;
+      const value = input.value.trim();
+
+      if (event.key === 'Enter' || event.key === ' ' || event.key === '　' || event.key === ',' || event.key === '，' || event.key === '、') {
+        event.preventDefault(); // フォーム送信を防ぐ
+        
+        const cleanedVal = value.replace(/[,，、\s]/g, '');
+        if (cleanedVal) {
+          addDetailTagChip(cleanedVal);
+          
+          // マスタ（カスタムフィルター）に登録されていない場合は自動保存
+          if (!state.customFilters.includes(cleanedVal)) {
+            state.customFilters.push(cleanedVal);
+            saveFiltersToLocalStorage();
+          }
+        }
+        input.value = "";
+      } else if (event.key === 'Backspace' && value === '') {
+        if (state.detailTempTags.length > 0) {
+          state.detailTempTags.pop();
+          renderDetailTags();
+          renderDetailSuggestedTags();
+        }
+      }
+    }
+
+    // 詳細用のタグを一時追加
+    function addDetailTagChip(tag) {
+      const cleaned = tag.trim().replace(/[,，、\s]/g, '');
+      if (cleaned && !state.detailTempTags.includes(cleaned)) {
+        state.detailTempTags.push(cleaned);
+        renderDetailTags();
+        renderDetailSuggestedTags();
+      }
+      document.getElementById('detail-tag-inline-input').value = "";
+      document.getElementById('detail-tag-inline-input').focus();
+    }
+
+    // 詳細用のタグを一時削除
+    function removeDetailTagChip(index) {
+      state.detailTempTags.splice(index, 1);
+      renderDetailTags();
+      renderDetailSuggestedTags();
+    }
+
+    // 詳細画面内のおすすめ・登録済みフィルター一覧を描画（追加・削除のショートカット）
+    function renderDetailSuggestedTags() {
+      const container = document.getElementById('detail-suggested-tags');
+      container.innerHTML = '';
+
+      state.customFilters.forEach(tag => {
+        const isSelected = state.detailTempTags.includes(tag);
+        const btn = document.createElement('button');
+        btn.type = "button";
+        
+        if (isSelected) {
+          btn.className = "text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-md transition-colors font-medium flex items-center space-x-1";
+          btn.innerHTML = `<span>${tag}</span> <i data-lucide="check" class="w-3 h-3"></i>`;
+          btn.onclick = () => {
+            const idx = state.detailTempTags.indexOf(tag);
+            if (idx !== -1) removeDetailTagChip(idx);
+          };
+        } else {
+          btn.className = "text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-md transition-colors font-medium";
+          btn.textContent = tag;
+          btn.onclick = () => {
+            addDetailTagChip(tag);
+          };
+        }
+        container.appendChild(btn);
+      });
+      lucide.createIcons();
+    }
+
+    // 詳細編集のキャンセル処理（変更を破棄して一覧に戻る）
+    function cancelDetailEdit() {
+      if (confirm("変更を破棄して一覧に戻りますか？")) {
+        switchToView('list');
+      }
+    }
+
+    // --- STREAMING_CHUNK:Binding event listeners for rich text input fields... ---
+    // 詳細画面からの保存処理
+    function saveDetailEdit(event) {
+      event.preventDefault();
+
+      const id = document.getElementById('detail-form-id').value;
+      const phraseText = document.getElementById('detail-phrase-input').value.trim();
+      const translationText = document.getElementById('detail-translation-input').value.trim();
+      const exampleText = document.getElementById('detail-example-input').value.trim();
+      const exampleTranslationText = document.getElementById('detail-example-translation-input').value.trim();
+      const memoText = document.getElementById('detail-memo-input').value.trim();
+
+      // インプットに入力途中のタグがあればそれも追加
+      const remainingTagInput = document.getElementById('detail-tag-inline-input').value.trim();
+      if (remainingTagInput) {
+        const cleaned = remainingTagInput.replace(/[,，、\s]/g, '');
+        if (cleaned && !state.detailTempTags.includes(cleaned)) {
+          state.detailTempTags.push(cleaned);
+          if (!state.customFilters.includes(cleaned)) {
+            state.customFilters.push(cleaned);
+            saveFiltersToLocalStorage();
+          }
+        }
+      }
+
+      if (!phraseText || !translationText) {
+        showToast("フレーズと日本語訳は必須です");
+        return;
+      }
+
+      // 編集処理
+      const index = state.phrases.findIndex(p => p.id === id);
+      if (index !== -1) {
+        state.phrases[index] = {
+          ...state.phrases[index],
+          phrase: phraseText,
+          translation: translationText,
+          example: exampleText,
+          exampleTranslation: exampleTranslationText,
+          memo: memoText,
+          tags: [...state.detailTempTags]
+        };
+        
+        savePhrasesToLocalStorage();
+        showToast("ノートの変更を保存しました");
+        
+        // 正常に一覧に戻す
+        switchToView('list');
+      } else {
+        showToast("エラー: 対象のフレーズが見つかりませんでした");
+      }
+    }
+
+
+    // --- UI レンダリング ---
+    function renderApp() {
+      renderFiltersAndList();
+    }
+
+    // フィルターの表示 & リスト描画
+    function renderFiltersAndList() {
+      renderTagFilters();
+      renderPhraseList();
+      updateFilterControlsUI();
+    }
+
+    // 検索上部のフィルターボタン群（マスタ配列 `customFilters` を基盤に生成）
+    function renderTagFilters() {
+      const tagContainer = document.getElementById('tag-filters');
+      tagContainer.innerHTML = '';
+
+      // マスタにあるタグをループしてフィルターボタンを作る
+      state.customFilters.forEach(tag => {
+        const isSelected = state.filters.selectedTag === tag;
+        
+        // 当該フィルターが付与されているフレーズの数をカウント
+        const count = state.phrases.filter(p => p.tags && p.tags.includes(tag)).length;
+
+        const btn = document.createElement('button');
+        btn.className = `px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center space-x-1 ${
+          isSelected 
+            ? 'bg-indigo-600 text-white border border-indigo-600 shadow-sm' 
+            : 'bg-white hover:bg-slate-50 text-slate-600 border border-slate-200'
+        }`;
+        btn.innerHTML = `
+          <span>${tag}</span>
+          <span class="text-[9px] px-1 py-0.2 rounded-full ${isSelected ? 'bg-indigo-700 text-indigo-100' : 'bg-slate-100 text-slate-400'}">${count}</span>
+        `;
+        btn.onclick = () => selectTagFilter(tag);
+        tagContainer.appendChild(btn);
+      });
+    }
+
+    // フィルター状態に応じたUIの切り替え
+    function updateFilterControlsUI() {
+      // お気に入りボタンのハイライト
+      const favBtn = document.getElementById('filter-favorite');
+      const starIcon = document.getElementById('star-icon');
+      
+      if (state.filters.favoriteOnly) {
+        favBtn.classList.add('bg-amber-50', 'border-amber-300', 'text-amber-700');
+        starIcon.classList.add('fill-amber-400', 'text-amber-500');
+        starIcon.classList.remove('fill-none', 'text-slate-600');
+      } else {
+        favBtn.classList.remove('bg-amber-50', 'border-amber-300', 'text-amber-700');
+        starIcon.classList.remove('fill-amber-400', 'text-amber-500');
+        starIcon.classList.add('fill-none', 'text-slate-600');
+      }
+
+      // クリアサーチボタン
+      const clearBtn = document.getElementById('clear-search');
+      if (state.filters.searchQuery) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+
+      // フィルターリセットボタン表示可否
+      const hasActiveFilters = state.filters.searchQuery || state.filters.favoriteOnly || state.filters.selectedTag;
+      const resetBtn = document.getElementById('reset-filters-btn');
+      if (hasActiveFilters) {
+        resetBtn.classList.remove('hidden');
+      } else {
+        resetBtn.classList.add('hidden');
+      }
+    }
+
+    // --- STREAMING_CHUNK:Handling phrase database saves and updates... ---
+    // フィルターに基づいてリストを生成
+    function renderPhraseList() {
+      const grid = document.getElementById('phrases-grid');
+      const emptyState = document.getElementById('empty-state');
+      grid.innerHTML = '';
+
+      // フィルタリング処理（検索・お気に入り・タグの複合条件判定）
+      const filtered = state.phrases.filter(item => {
+        // 1. 検索ワード判定（英語フレーズ or 日本語訳 or 例文 or メモ）
+        const q = state.filters.searchQuery.toLowerCase();
+        const matchesSearch = !q || 
+          item.phrase.toLowerCase().includes(q) || 
+          item.translation.toLowerCase().includes(q) || 
+          (item.example && item.example.toLowerCase().includes(q)) || 
+          (item.exampleTranslation && item.exampleTranslation.toLowerCase().includes(q)) || 
+          (item.memo && item.memo.toLowerCase().includes(q));
+
+        // 2. お気に入り限定判定
+        const matchesFavorite = !state.filters.favoriteOnly || item.favorite;
+
+        // 3. タグ限定判定
+        const matchesTag = !state.filters.selectedTag || (item.tags && item.tags.includes(state.filters.selectedTag));
+
+        return matchesSearch && matchesFavorite && matchesTag;
+      });
+
+      // 件数表示
+      document.getElementById('results-count').textContent = filtered.length;
+
+      if (filtered.length === 0) {
+        grid.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      grid.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+
+      // 最新追加順に並び替え
+      const sorted = filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      sorted.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md hover:border-slate-300 transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden';
+        
+        // カード全体のクリック時に確実に編集画面へ遷移させる
+        card.onclick = (e) => {
+          // カード内のボタンの誤発火を防ぐ
+          if (e.target.closest('button')) return;
+          openDetailEdit(item.id);
+        };
+
+        const favIconClass = item.favorite ? 'fill-amber-400 text-amber-400' : 'text-slate-300 hover:text-amber-500';
+        
+        card.innerHTML = `
+          <div>
+            <!-- タグ、お気に入り、削除アクション -->
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex flex-wrap gap-1">
+                ${(item.tags || []).slice(0, 3).map(tag => `
+                  <span class="text-[10px] bg-slate-100 text-slate-500 font-medium px-2 py-0.5 rounded-full border border-slate-200/50">
+                    ${tag}
+                  </span>
+                `).join('')}
+                ${(item.tags || []).length > 3 ? '<span class="text-[10px] text-slate-400 font-bold px-1">...</span>' : ''}
+              </div>
+              
+              <div class="flex items-center space-x-1">
+                <!-- お気に入りボタン (JSのイベントで制御するためclass属性を設定) -->
+                <button 
+                  type="button"
+                  class="fav-toggle-btn p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-amber-500 transition-colors"
+                  title="お気に入り切り替え"
+                >
+                  <i data-lucide="star" class="w-4 h-4 ${favIconClass}"></i>
+                </button>
+                <!-- カード内直接削除ボタン -->
+                <button 
+                  type="button"
+                  class="delete-trigger-btn p-1.5 rounded-lg hover:bg-rose-50 text-slate-300 hover:text-rose-600 transition-colors"
+                  title="このフレーズを削除"
+                >
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- フレーズ本体 -->
+            <h4 class="text-xl font-bold english-font text-slate-900 group-hover:text-indigo-600 transition-colors mb-1 truncate pr-4">
+              ${item.phrase}
+            </h4>
+
+            <!-- 日本語訳 -->
+            <p class="text-sm text-slate-600 font-medium line-clamp-1 mb-3">
+              ${item.translation}
+            </p>
+          </div>
+
+          <!-- 下部リンク案内 -->
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+            <span class="font-mono text-[10px]">#${item.id}</span>
+            <button 
+              type="button"
+              class="edit-trigger-btn flex items-center space-x-1 text-slate-500 hover:text-indigo-600 font-medium transition-colors cursor-pointer"
+            >
+              <span class="font-semibold text-xs text-indigo-600 hover:text-indigo-800">フレーズを編集</span>
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-indigo-600"></i>
+            </button>
+          </div>
+        `;
+
+        // ----------------------------------------------------
+        //  100%確実に動作させるための直接的なJSイベントリスナー割り当て
+        // ----------------------------------------------------
+        
+        // お気に入りボタン
+        card.querySelector('.fav-toggle-btn').onclick = (e) => {
+          e.stopPropagation(); // 親要素(card)へのクリックの波及を防ぐ
+          toggleFavoriteStatus(item.id);
+        };
+
+        // ゴミ箱(削除)ボタン
+        card.querySelector('.delete-trigger-btn').onclick = (e) => {
+          e.stopPropagation();
+          confirmDeletePhrase(item.id);
+        };
+
+        // 「フレーズを編集」リンクボタン
+        card.querySelector('.edit-trigger-btn').onclick = (e) => {
+          e.stopPropagation();
+          openDetailEdit(item.id);
+        };
+
+        grid.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    // --- 各種操作ハンドラ ---
+
+    // 検索入力
+    function handleSearch() {
+      const val = document.getElementById('search-input').value;
+      state.filters.searchQuery = val.trim();
+      renderPhraseList();
+      updateFilterControlsUI();
+    }
+
+    // 検索クリア
+    function clearSearchInput() {
+      document.getElementById('search-input').value = "";
+      state.filters.searchQuery = "";
+      renderPhraseList();
+      updateFilterControlsUI();
+      document.getElementById('search-input').focus();
+    }
+
+    // お気に入りフィルターのトグル
+    function toggleFavoriteFilter() {
+      state.filters.favoriteOnly = !state.filters.favoriteOnly;
+      renderFiltersAndList();
+    }
+
+    // タグ選択フィルター
+    function selectTagFilter(tag) {
+      if (state.filters.selectedTag === tag) {
+        state.filters.selectedTag = null; // すでに選ばれていたら解除
+      } else {
+        state.filters.selectedTag = tag;
+      }
+      renderFiltersAndList();
+    }
+
+    // すべてのフィルターをリセット
+    function resetAllFilters() {
+      document.getElementById('search-input').value = "";
+      state.filters.searchQuery = "";
+      state.filters.favoriteOnly = false;
+      state.filters.selectedTag = null;
+      renderFiltersAndList();
+    }
+
+    // リスト側でのお気に入りトグル切り替え（星マーククリックで確実に反応します）
+    function toggleFavoriteStatus(id) {
+      const phrase = state.phrases.find(p => p.id === id);
+      if (phrase) {
+        phrase.favorite = !phrase.favorite;
+        savePhrasesToLocalStorage();
+        
+        // 星マークをトグルした後、リスト全体を即再描画する
+        renderFiltersAndList();
+        
+        showToast(phrase.favorite ? "お気に入りに追加しました" : "お気に入りから削除しました");
+      }
+    }
+
+    // --- 新規追加用フォーム (モーダル) の管理 ---
+    function openAddForm() {
+      document.getElementById('modal-title').innerHTML = `
+        <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-600"></i>
+        <span>新しいフレーズを追加</span>
+      `;
+      document.getElementById('form-id').value = "";
+      document.getElementById('form-phrase').value = "";
+      document.getElementById('form-translation').value = "";
+      document.getElementById('form-example').value = "";
+      document.getElementById('form-example-translation').value = "";
+      document.getElementById('form-memo').value = "";
+      document.getElementById('form-favorite').checked = false;
+      
+      // タグの一時配列をリセット
+      state.tempTags = [];
+      renderModalTags();
+      renderFormSuggestedTags();
+
+      openModal();
+    }
+
+    // モーダル内のチップ形式のタグリストをレンダリング
+    function renderModalTags() {
+      const listEl = document.getElementById('modal-tags-list');
+      listEl.innerHTML = '';
+
+      state.tempTags.forEach((tag, idx) => {
+        const chip = document.createElement('span');
+        chip.className = 'inline-flex items-center space-x-1 bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-indigo-100 shadow-sm';
+        chip.innerHTML = `
+          <span>${tag}</span>
+          <button type="button" class="tag-remove-modal-btn hover:bg-indigo-100 p-0.5 rounded text-indigo-500 hover:text-indigo-800 transition-colors">
+            <i data-lucide="x" class="w-3 h-3"></i>
+          </button>
+        `;
+        chip.querySelector('.tag-remove-modal-btn').onclick = (e) => {
+          e.stopPropagation();
+          removeTagChip(idx);
+        };
+        listEl.appendChild(chip);
+      });
+
+      // インラインインプットをリセット
+      document.getElementById('tag-inline-input').value = "";
+      lucide.createIcons();
+    }
+
+    // フォームに並ぶおすすめ（＝登録済み）フィルター選択ボタンを動的生成
+    function renderFormSuggestedTags() {
+      const container = document.getElementById('form-suggested-tags');
+      container.innerHTML = '';
+
+      state.customFilters.forEach(tag => {
+        const isSelected = state.tempTags.includes(tag);
+        const btn = document.createElement('button');
+        btn.type = "button";
+        
+        if (isSelected) {
+          btn.className = "text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-md transition-colors font-medium flex items-center space-x-1";
+          btn.innerHTML = `<span>${tag}</span> <i data-lucide="check" class="w-3 h-3"></i>`;
+          btn.onclick = () => {
+            const idx = state.tempTags.indexOf(tag);
+            if (idx !== -1) removeTagChip(idx);
+          };
+        } else {
+          btn.className = "text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-md transition-colors font-medium";
+          btn.textContent = tag;
+          btn.onclick = () => {
+            addTagChip(tag);
+          };
+        }
+        container.appendChild(btn);
+      });
+      lucide.createIcons();
+    }
+
+    // タグ入力時のキーボードイベント
+    function handleTagInputKeydown(event) {
+      const input = event.target;
+      const value = input.value.trim();
+
+      if (event.key === 'Enter' || event.key === ' ' || event.key === '　' || event.key === ',' || event.key === '，' || event.key === '、') {
+        event.preventDefault(); // 送信を防ぐ
+        
+        const cleanedVal = value.replace(/[,，、\s]/g, '');
+        if (cleanedVal) {
+          addTagChip(cleanedVal);
+          
+          if (!state.customFilters.includes(cleanedVal)) {
+            state.customFilters.push(cleanedVal);
+            saveFiltersToLocalStorage();
+          }
+        }
+        input.value = "";
+      } else if (event.key === 'Backspace' && value === '') {
+        if (state.tempTags.length > 0) {
+          state.tempTags.pop();
+          renderModalTags();
+          renderFormSuggestedTags();
+        }
+      }
+    }
+
+    // 新規用タグチップを一時追加
+    function addTagChip(tag) {
+      const cleaned = tag.trim().replace(/[,，、\s]/g, '');
+      if (cleaned && !state.tempTags.includes(cleaned)) {
+        state.tempTags.push(cleaned);
+        renderModalTags();
+        renderFormSuggestedTags();
+      }
+      document.getElementById('tag-inline-input').value = "";
+      document.getElementById('tag-inline-input').focus();
+    }
+
+    // 新規用タグチップを一時削除
+    function removeTagChip(index) {
+      state.tempTags.splice(index, 1);
+      renderModalTags();
+      renderFormSuggestedTags();
+    }
+
+    // モーダルの表示制御
+    function openModal() {
+      const modal = document.getElementById('phrase-modal');
+      const container = document.getElementById('modal-container');
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        container.classList.remove('scale-95');
+        container.classList.add('scale-100');
+      }, 10);
+      lucide.createIcons();
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('phrase-modal');
+      const container = document.getElementById('modal-container');
+      container.classList.remove('scale-100');
+      container.classList.add('scale-95');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 150);
+    }
+
+    // 新規保存処理 (モーダル)
+    function savePhrase(event) {
+      event.preventDefault();
+
+      const phraseText = document.getElementById('form-phrase').value.trim();
+      const translationText = document.getElementById('form-translation').value.trim();
+      const exampleText = document.getElementById('form-example').value.trim();
+      const exampleTranslationText = document.getElementById('form-example-translation').value.trim();
+      const memoText = document.getElementById('form-memo').value.trim();
+      const favorite = document.getElementById('form-favorite').checked;
+
+      // タグを回収
+      const remainingTagInput = document.getElementById('tag-inline-input').value.trim();
+      if (remainingTagInput) {
+        const cleaned = remainingTagInput.replace(/[,，、\s]/g, '');
+        if (cleaned && !state.tempTags.includes(cleaned)) {
+          state.tempTags.push(cleaned);
+          if (!state.customFilters.includes(cleaned)) {
+            state.customFilters.push(cleaned);
+            saveFiltersToLocalStorage();
+          }
+        }
+      }
+
+      if (!phraseText || !translationText) {
+        showToast("フレーズと日本語訳は必須です");
+        return;
+      }
+
+      // 新規追加
+      const newPhrase = {
+        id: Date.now().toString(),
+        phrase: phraseText,
+        translation: translationText,
+        example: exampleText,
+        exampleTranslation: exampleTranslationText,
+        memo: memoText,
+        tags: [...state.tempTags],
+        favorite: favorite,
+        createdAt: Date.now()
+      };
+      state.phrases.push(newPhrase);
+      showToast("フレーズを追加しました");
+
+      savePhrasesToLocalStorage();
+      closeModal();
+      
+      switchToView('list');
+    }
+
+    // --- 削除処理 ---
+    function confirmDeletePhrase(id) {
+      state.activePhraseIdToDelete = id;
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.remove('hidden');
+      
+      // 確定ボタンのイベント登録
+      document.getElementById('confirm-delete-btn').onclick = function() {
+        executeDelete();
+      };
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      state.activePhraseIdToDelete = null;
+    }
+
+    function executeDelete() {
+      const id = state.activePhraseIdToDelete;
+      if (!id) return;
+
+      state.phrases = state.phrases.filter(p => p.id !== id);
+      savePhrasesToLocalStorage();
+      closeConfirmModal();
+      showToast("フレーズを削除しました");
+      
+      switchToView('list');
+    }
+
+
+    // ==========================================
+    // --- フィルター（タグマスタ）管理処理 ---
+    // ==========================================
+
+    // フィルター管理モーダルを開く
+    function openFilterManageModal() {
+      const modal = document.getElementById('filter-manage-modal');
+      const container = document.getElementById('filter-modal-container');
+      
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        container.classList.remove('scale-95');
+        container.classList.add('scale-100');
+      }, 10);
+
+      renderCustomFiltersList();
+      lucide.createIcons();
+    }
+
+    function closeFilterManageModal() {
+      const modal = document.getElementById('filter-manage-modal');
+      const container = document.getElementById('filter-modal-container');
+      
+      container.classList.remove('scale-100');
+      container.classList.add('scale-95');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 150);
+
+      renderFiltersAndList();
+    }
+
+    // 管理モーダル内の既存フィルター一覧を描画
+    function renderCustomFiltersList() {
+      const container = document.getElementById('custom-filters-list-container');
+      container.innerHTML = '';
+
+      if (state.customFilters.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">作成されたフィルターはありません</p>`;
+        return;
+      }
+
+      state.customFilters.forEach((tag, index) => {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'flex items-center justify-between bg-slate-50 p-2.5 rounded-lg border border-slate-200/50 hover:bg-slate-100/70 transition-colors';
+        
+        // 当該タグを保有しているフレーズの数をカウント
+        const phraseCount = state.phrases.filter(p => p.tags && p.tags.includes(tag)).length;
+
+        itemEl.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-slate-700 text-sm"># ${tag}</span>
+            <span class="text-[10px] bg-slate-200 text-slate-600 px-1.5 py-0.2 rounded-full font-mono">${phraseCount}件</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <!-- 編集ボタン -->
+            <button 
+              onclick="editCustomFilterName('${tag}')" 
+              class="p-1.5 rounded bg-white hover:bg-amber-50 text-slate-500 hover:text-amber-600 border border-slate-200 hover:border-amber-200 transition-all"
+              title="名前を変更する"
+            >
+              <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+            </button>
+            <!-- 削除ボタン -->
+            <button 
+              onclick="deleteCustomFilter('${tag}')" 
+              class="p-1.5 rounded bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition-all"
+              title="フィルターを削除"
+            >
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(itemEl);
+      });
+      lucide.createIcons();
+    }
+
+    // フィルターを追加する
+    function addNewCustomFilter() {
+      const input = document.getElementById('new-filter-input');
+      const value = input.value.trim().replace(/[,，、\s]/g, ''); // 特殊文字をトリム
+
+      if (!value) {
+        showToast("フィルター名を入力してください");
+        return;
+      }
+
+      if (state.customFilters.includes(value)) {
+        showToast("そのフィルター名は既に登録されています");
+        return;
+      }
+
+      state.customFilters.push(value);
+      saveFiltersToLocalStorage();
+      input.value = '';
+      
+      renderCustomFiltersList();
+      showToast(`新しくフィルター「${value}」を作成しました`);
+    }
+
+    // フィルター名を変更（リネーム）する
+    function editCustomFilterName(oldName) {
+      const newName = prompt(`「${oldName}」の新しいフィルター名を入力してください:`, oldName);
+      
+      if (newName === null) return; // キャンセル
+
+      const cleanedNewName = newName.trim().replace(/[,，、\s]/g, '');
+      if (!cleanedNewName) {
+        showToast("有効なフィルター名を入力してください");
+        return;
+      }
+
+      if (oldName === cleanedNewName) return;
+
+      if (state.customFilters.includes(cleanedNewName)) {
+        showToast("入力された名前は既に登録されています");
+        return;
+      }
+
+      // 1. マスタデータの更新
+      const index = state.customFilters.indexOf(oldName);
+      if (index !== -1) {
+        state.customFilters[index] = cleanedNewName;
+      }
+
+      // 2. 登録済み全フレーズのタグ名も一括で置換
+      state.phrases.forEach(p => {
+        if (p.tags) {
+          p.tags = p.tags.map(t => t === oldName ? cleanedNewName : t);
+        }
+      });
+
+      // 3. 現在選択中のフィルターだったら更新
+      if (state.filters.selectedTag === oldName) {
+        state.filters.selectedTag = cleanedNewName;
+      }
+
+      saveFiltersToLocalStorage();
+      savePhrasesToLocalStorage();
+
+      renderCustomFiltersList();
+      showToast("フィルター名を変更し、全フレーズへ反映しました");
+    }
+
+    // フィルターの削除
+    function deleteCustomFilter(tagName) {
+      if (!confirm(`フィルター「${tagName}」を削除しますか？\n（フレーズ自体は削除されず、タグのみが取り除かれます）`)) {
+        return;
+      }
+
+      // 1. マスタデータから除外
+      state.customFilters = state.customFilters.filter(t => t !== tagName);
+
+      // 2. 全フレーズからそのタグを取り除く
+      state.phrases.forEach(p => {
+        if (p.tags) {
+          p.tags = p.tags.filter(t => t !== tagName);
+        }
+      });
+
+      // 3. 選択フィルターが削除対象だった場合は選択解除
+      if (state.filters.selectedTag === tagName) {
+        state.filters.selectedTag = null;
+      }
+
+      saveFiltersToLocalStorage();
+      savePhrasesToLocalStorage();
+
+      renderCustomFiltersList();
+      showToast(`フィルター「${tagName}」を削除しました`);
+    }
+
+
+    // --- 共通トースト通知 ---
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-text');
+      text.textContent = message;
+
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
