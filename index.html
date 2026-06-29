@@ -9,7 +9,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:ital,wght=0,400;0,600;1,400&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&family=Noto+Sans+JP:wght=300;400;500;700&family=Playfair+Display:ital,wght=0,400;0,600;1,400&display=swap');
 
     body {
       font-family: 'Noto Sans JP', sans-serif;
@@ -27,8 +27,8 @@
       font-family: 'Courier Prime', monospace;
     }
 
-    /* ノート風のデザインライン */
-    .notebook-paper {
+    /* ノート風のデザインライン（一覧のカードや詳細用のクラス定義。編集時は不自然になるため使用せず） */
+    .notebook-paper-with-line {
       background: #ffffff;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.05);
       border: 1px solid #e2e8f0;
@@ -36,12 +36,12 @@
       position: relative;
     }
 
-    .notebook-paper::before {
+    .notebook-paper-with-line::before {
       content: '';
       position: absolute;
       top: 0;
       bottom: 0;
-      left: 32px; /* モバイル向けに少し左に寄せて、入力エリアを広く確保 */
+      left: 32px;
       width: 2px;
       background-color: #fca5a5; /* 赤いマージン線 */
       opacity: 0.5;
@@ -49,8 +49,8 @@
     }
 
     @media (min-width: 768px) {
-      .notebook-paper::before {
-        left: 48px; /* デスクトップではゆったりと配置 */
+      .notebook-paper-with-line::before {
+        left: 48px;
       }
     }
 
@@ -119,7 +119,6 @@
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
           </div>
-          <!-- モバイルでのズームを防ぐため text-base (16px) を適用 -->
           <input 
             type="text" 
             id="search-input" 
@@ -151,7 +150,7 @@
 
             <span class="text-slate-300 hidden sm:inline">|</span>
 
-            <!-- タグ選択 -->
+            <!-- タグ選択（複数同時選択可能） -->
             <div class="flex flex-wrap items-center gap-1.5" id="tag-filters">
               <!-- 動的にカスタムフィルターを生成 -->
             </div>
@@ -177,7 +176,7 @@
         <button 
           id="reset-filters-btn" 
           onclick="resetAllFilters()" 
-          class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center space-x-1 hidden min-h-[32px]"
+          class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center space-x-1 hidden min-h-[32px] active:scale-95"
         >
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
           <span>フィルターをリセット</span>
@@ -207,7 +206,7 @@
 
     </div>
 
-    <!-- 詳細編集統合画面 -->
+    <!-- 詳細編集統合画面 (赤い縦線を外し、左右の余白を等しくすることでスマホでの使いやすさを最大化) -->
     <div id="view-detail" class="hidden space-y-4 md:space-y-6">
       <div class="flex items-center justify-between mb-2">
         <button 
@@ -232,8 +231,8 @@
         </div>
       </div>
 
-      <!-- 詳細・直接編集ノート（赤いマージン線との間隔を pl-10 に、デスクトップで pl-16 に調整し重なりを防止） -->
-      <form id="detail-edit-form" onsubmit="saveDetailEdit(event)" class="notebook-paper p-5 md:p-10 pl-10 md:pl-16 min-h-[450px] flex flex-col justify-between space-y-6 md:space-y-8">
+      <!-- 詳細・直接編集ノート (赤いマージン線を削除し、シンプルな美しいカード型に一新) -->
+      <form id="detail-edit-form" onsubmit="saveDetailEdit(event)" class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 md:p-8 min-h-[450px] flex flex-col justify-between space-y-6 md:space-y-8">
         <!-- 編集対象のIDを保持する隠しフィールド -->
         <input type="hidden" id="detail-form-id">
         
@@ -254,14 +253,14 @@
             </button>
           </div>
 
-          <!-- 英語フレーズ (モバイルの自動拡大防止のためtext-base以上に設定、デスクトップは大文字で見やすく) -->
+          <!-- 英語フレーズ -->
           <div class="space-y-1">
             <label class="text-[10px] md:text-xs font-bold text-indigo-500 uppercase tracking-widest block font-mono" for="detail-phrase-input">PHRASE *</label>
             <input 
               type="text" 
               id="detail-phrase-input" 
               required
-              class="w-full text-xl md:text-3xl font-bold english-font text-slate-900 bg-transparent border-b border-dashed border-slate-200 focus:border-indigo-500 focus:ring-0 outline-none pb-1 transition-colors text-base md:text-2xl"
+              class="w-full font-bold english-font text-slate-900 bg-transparent border-b border-dashed border-slate-200 focus:border-indigo-500 focus:ring-0 outline-none pb-1 transition-colors text-base md:text-2xl"
               placeholder="英語フレーズを入力"
             >
           </div>
@@ -288,7 +287,6 @@
                 class="w-full bg-transparent border-b border-dashed border-slate-300 focus:border-indigo-500 focus:ring-0 outline-none pb-1 text-base italic font-medium text-slate-800 english-font"
                 placeholder="英語の例文を入力してください"
               >
-              <!-- モバイルでのズームを防ぐため text-base 以上のフォントサイズを適用 -->
               <input 
                 type="text" 
                 id="detail-example-translation-input" 
@@ -313,7 +311,7 @@
           <div class="space-y-2">
             <label class="text-[10px] md:text-xs font-bold text-indigo-500 uppercase tracking-widest block font-mono">TAGS / FILTERS</label>
             
-            <!-- 詳細ノート内タグ管理 (インラインタグ入力もtext-base以上に設定) -->
+            <!-- 詳細ノート内タグ管理 -->
             <div class="flex flex-wrap gap-1.5 p-2.5 border border-slate-200 rounded-xl bg-slate-50/50 min-h-[46px] focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 transition-all">
               <div id="detail-tags-list" class="flex flex-wrap gap-1.5 items-center">
                 <!-- JSで動的にタグチップが入ります -->
@@ -342,7 +340,7 @@
           <button 
             type="button" 
             onclick="cancelDetailEdit()" 
-            class="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors border border-slate-200 min-h-[40px]"
+            class="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors border border-slate-200 min-h-[40px] active:scale-95"
           >
             変更を破棄
           </button>
@@ -370,13 +368,12 @@
           <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-600"></i>
           <span>新しいフレーズを追加</span>
         </h3>
-        <!-- タップターゲット確保のためパディングを大きめに -->
         <button onclick="closeModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <!-- モーダルフォーム内容（モバイルでのズームを避けるため全てのinput/textareaのフォントをtext-baseに最適化） -->
+      <!-- モーダルフォーム内容 -->
       <form id="phrase-form" onsubmit="savePhrase(event)" class="flex-grow overflow-y-auto p-5 space-y-4">
         <input type="hidden" id="form-id">
 
@@ -441,7 +438,7 @@
             <div id="modal-tags-list" class="flex flex-wrap gap-1.5 items-center">
               <!-- JSで動的に追加されたタグチップがここに入ります -->
             </div>
-            <!-- 入力用インラインテキストボックス (text-base) -->
+            <!-- 入力用インラインテキストボックス -->
             <input 
               type="text" 
               id="tag-inline-input" 
@@ -463,7 +460,6 @@
 
         <!-- お気に入りトグル -->
         <div class="flex items-center space-x-2.5 pt-2">
-          <!-- タップしやすい大きめのチェックボックスサイズ -->
           <input 
             type="checkbox" 
             id="form-favorite" 
@@ -514,23 +510,22 @@
           独自のカスタムフィルタータグを自由に作成、名前変更、削除できます。フィルターを削除しても、登録済みのフレーズ自体は削除されません。
         </p>
 
-        <!-- 新規フィルターの追加フォーム -->
+        <!-- 新規フィルターの追加フォーム (flex-grow + min-w-0 とレスポンシブなボタン設計で絶対にはみ出さないように修正) -->
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-2">
           <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">新規フィルター作成</label>
-          <div class="flex space-x-2">
-            <!-- モバイルズームを防ぐため text-base -->
+          <div class="flex space-x-2 w-full items-center">
             <input 
               type="text" 
               id="new-filter-input" 
               placeholder="例: ネイティブ表現、重要" 
-              class="flex-grow px-3 py-2.5 border border-slate-200 rounded-xl text-base outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+              class="flex-grow min-w-0 px-3 py-2.5 border border-slate-200 rounded-xl text-base outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
             >
             <button 
               onclick="addNewCustomFilter()" 
-              class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 rounded-xl text-sm transition-all duration-200 flex items-center space-x-1 shadow-sm active:scale-95 shrink-0"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-3 sm:px-4 py-2.5 rounded-xl text-sm transition-all duration-200 flex items-center justify-center space-x-1 shadow-sm active:scale-95 shrink-0 min-w-[44px] min-h-[40px]"
             >
-              <i data-lucide="plus" class="w-4 h-4"></i>
-              <span>追加</span>
+              <i data-lucide="plus" class="w-5 h-5"></i>
+              <span class="hidden sm:inline">追加</span>
             </button>
           </div>
         </div>
@@ -651,7 +646,7 @@
       filters: {
         searchQuery: "",
         favoriteOnly: false,
-        selectedTag: null
+        selectedTags: [] // 複数フィルターを格納する配列に変更
       },
       activePhraseIdToDelete: null,
       tempTags: [], 
@@ -826,7 +821,7 @@
       lucide.createIcons();
     }
 
-    // 詳細画面でのタグ入力時のイベント（Enter, Space, 読点・カンマでタグ化）
+    // 詳細画面でのタグ入力時のイベント
     function handleDetailTagInputKeydown(event) {
       const input = event.target;
       const value = input.value.trim();
@@ -882,7 +877,6 @@
         const btn = document.createElement('button');
         btn.type = "button";
         
-        // タップしやすいように最小の高さを確保
         if (isSelected) {
           btn.className = "text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl transition-all font-medium flex items-center space-x-1 min-h-[34px] active:scale-95";
           btn.innerHTML = `<span>${tag}</span> <i data-lucide="check" class="w-3 h-3"></i>`;
@@ -968,13 +962,13 @@
       updateFilterControlsUI();
     }
 
-    // 検索上部のフィルターボタン群
+    // 検索上部のフィルターボタン群（複数選択対応）
     function renderTagFilters() {
       const tagContainer = document.getElementById('tag-filters');
       tagContainer.innerHTML = '';
 
       state.customFilters.forEach(tag => {
-        const isSelected = state.filters.selectedTag === tag;
+        const isSelected = state.filters.selectedTags.includes(tag);
         const count = state.phrases.filter(p => p.tags && p.tags.includes(tag)).length;
 
         const btn = document.createElement('button');
@@ -1014,7 +1008,8 @@
         clearBtn.classList.add('hidden');
       }
 
-      const hasActiveFilters = state.filters.searchQuery || state.filters.favoriteOnly || state.filters.selectedTag;
+      // 複数タグのいずれかが選択されているか判定
+      const hasActiveFilters = state.filters.searchQuery || state.filters.favoriteOnly || state.filters.selectedTags.length > 0;
       const resetBtn = document.getElementById('reset-filters-btn');
       if (hasActiveFilters) {
         resetBtn.classList.remove('hidden');
@@ -1023,7 +1018,7 @@
       }
     }
 
-    // フィルターに基づいてリストを生成
+    // フィルターに基づいてリストを生成（複数タグAND条件絞り込み）
     function renderPhraseList() {
       const grid = document.getElementById('phrases-grid');
       const emptyState = document.getElementById('empty-state');
@@ -1039,7 +1034,10 @@
           (item.memo && item.memo.toLowerCase().includes(q));
 
         const matchesFavorite = !state.filters.favoriteOnly || item.favorite;
-        const matchesTag = !state.filters.selectedTag || (item.tags && item.tags.includes(state.filters.selectedTag));
+        
+        // 複数同時選択した全タグが含まれているか判定 (AND検索)
+        const matchesTag = state.filters.selectedTags.length === 0 || 
+          state.filters.selectedTags.every(tag => item.tags && item.tags.includes(tag));
 
         return matchesSearch && matchesFavorite && matchesTag;
       });
@@ -1119,7 +1117,6 @@
           </div>
         `;
 
-        // 各種ボタンのイベントリスナー（モバイルで確実に発火）
         card.querySelector('.fav-toggle-btn').onclick = (e) => {
           e.stopPropagation(); 
           toggleFavoriteStatus(item.id);
@@ -1161,11 +1158,13 @@
       renderFiltersAndList();
     }
 
+    // タグ選択フィルターのトグル処理（複数選択配列制御）
     function selectTagFilter(tag) {
-      if (state.filters.selectedTag === tag) {
-        state.filters.selectedTag = null; 
+      const index = state.filters.selectedTags.indexOf(tag);
+      if (index !== -1) {
+        state.filters.selectedTags.splice(index, 1); // 選択解除
       } else {
-        state.filters.selectedTag = tag;
+        state.filters.selectedTags.push(tag); // 選択追加
       }
       renderFiltersAndList();
     }
@@ -1174,7 +1173,7 @@
       document.getElementById('search-input').value = "";
       state.filters.searchQuery = "";
       state.filters.favoriteOnly = false;
-      state.filters.selectedTag = null;
+      state.filters.selectedTags = []; // 配列リセット
       renderFiltersAndList();
     }
 
@@ -1462,8 +1461,9 @@
             </button>
             <button 
               onclick="deleteCustomFilter('${tag}')" 
-              class="p-2 rounded-xl bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition-all min-w-[36px] min-h-[36px] flex items-center justify-center"
+              class="delete-filter-btn p-2 rounded-xl bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition-all min-w-[36px] min-h-[36px] flex items-center justify-center"
               title="フィルターを削除"
+              ontouchend="this.blur();"
             >
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
@@ -1525,8 +1525,10 @@
         }
       });
 
-      if (state.filters.selectedTag === oldName) {
-        state.filters.selectedTag = cleanedNewName;
+      // 複数選択用の配列も更新
+      const selectedIndex = state.filters.selectedTags.indexOf(oldName);
+      if (selectedIndex !== -1) {
+        state.filters.selectedTags[selectedIndex] = cleanedNewName;
       }
 
       saveFiltersToLocalStorage();
@@ -1537,6 +1539,11 @@
     }
 
     function deleteCustomFilter(tagName) {
+      // 選択したボタンのホバー・フォーカス状態を残さないよう即座にblurを実行
+      if (document.activeElement) {
+        document.activeElement.blur();
+      }
+
       if (!confirm(`フィルター「${tagName}」を削除しますか？\n（フレーズ自体は削除されず、タグのみが取り除かれます）`)) {
         return;
       }
@@ -1549,15 +1556,21 @@
         }
       });
 
-      if (state.filters.selectedTag === tagName) {
-        state.filters.selectedTag = null;
-      }
+      // 複数選択されたタグから除外
+      state.filters.selectedTags = state.filters.selectedTags.filter(t => t !== tagName);
 
       saveFiltersToLocalStorage();
       savePhrasesToLocalStorage();
 
       renderCustomFiltersList();
       showToast(`フィルター「${tagName}」を削除しました`);
+      
+      // 再描画後に再度フォーカスを解除して光りっぱなしを防ぐ
+      setTimeout(() => {
+        if (document.activeElement) {
+          document.activeElement.blur();
+        }
+      }, 50);
     }
 
     // 共通トースト通知
